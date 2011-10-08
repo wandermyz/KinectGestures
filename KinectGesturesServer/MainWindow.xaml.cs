@@ -22,6 +22,7 @@ namespace KinectGesturesServer
         private NuiSensor nuiSensor;
         private VideoWindow rawVideoWindow, depthVideoWindow;
         private Dictionary<int, TrackingDataControl> handTrackingControlMap;
+        private Server server;
         
         public MainWindow()
         {
@@ -32,10 +33,14 @@ namespace KinectGesturesServer
             nuiSensor.HandTracker.HandCreate += new EventHandler<OpenNI.HandCreateEventArgs>(HandTracker_HandCreate);
             nuiSensor.HandTracker.HandDestroy += new EventHandler<OpenNI.HandDestroyEventArgs>(HandTracker_HandDestroy);
             nuiSensor.HandTracker.HandUpdate += new EventHandler<OpenNI.HandUpdateEventArgs>(HandTracker_HandUpdate);
+
+            server = new Server(nuiSensor);
+            server.Start();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            server.Stop();
             nuiSensor.Dispose();
         }
 
