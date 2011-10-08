@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using OpenNI;
 
-namespace Nui
+namespace KinectGesturesServer
 {
     /// <summary>
     /// Represents a Natural User Interface (image and depth) sensor handler.
@@ -19,7 +19,7 @@ namespace Nui
         /// <summary>
         /// Default configuration file path.
         /// </summary>
-        private const string CONFIGURATION = @"SamplesConfig.xml";
+        private const string CONFIGURATION = @"KinectGesturesConfig.xml";
 
         /// <summary>
         /// Horizontal bitmap dpi.
@@ -38,49 +38,40 @@ namespace Nui
         /// <summary>
         /// Thread responsible for image and depth camera updates.
         /// </summary>
-        private Thread _cameraThread;
+        private Thread cameraThread;
 
         /// <summary>
         /// Indicates whether the thread is running.
         /// </summary>
-        private bool _isRunning = true;
+        private bool isRunning = true;
 
         /// <summary>
         /// Image camera source.
         /// </summary>
-        private WriteableBitmap _imageBitmap;
+        private WriteableBitmap imageBitmap;
 
         /// <summary>
         /// Depth camera source.
         /// </summary>
-        private WriteableBitmap _depthBitmap;
+        private WriteableBitmap depthBitmap;
 
         /// <summary>
         /// Raw image metadata.
         /// </summary>
-        private ImageMetaData _imgMD = new ImageMetaData();
+        private ImageMetaData imgMD = new ImageMetaData();
 
         /// <summary>
         /// Depth image metadata.
         /// </summary>
-        private DepthMetaData _depthMD = new DepthMetaData();
+        private DepthMetaData depthMD = new DepthMetaData();
 
-        private HandSensor handSensor;
+        private HandTracker handTracker;
 
-        //surface model
-        private double[,] surfaceModelDepthMap = null;  //use double to calculate average
-        private double[,] surfaceModelNoiseMap = null;  //use to estimate noise of each pixel
-        private bool isCalibrating = false;
-        private int calibrateFrameCount = 0;
-        
         #endregion
 
         #region Properties
 
-        public HandSensor HandSensor { get { return handSensor; } }
-
-        public int SurfaceShellDepth { get; set; }
-        public int SurfaceNoiseDepth { get; set; }
+        public HandTracker HandTracker { get { return handTracker; } }
 
         #region Bitmap properties
 
@@ -91,14 +82,14 @@ namespace Nui
         {
             get
             {
-                if (_imageBitmap != null)
+                if (imageBitmap != null)
                 {
-                    _imageBitmap.Lock();
-                    _imageBitmap.WritePixels(new Int32Rect(0, 0, _imgMD.XRes, _imgMD.YRes), _imgMD.ImageMapPtr, (int)_imgMD.DataSize, _imageBitmap.BackBufferStride);
-                    _imageBitmap.Unlock();
+                    imageBitmap.Lock();
+                    imageBitmap.WritePixels(new Int32Rect(0, 0, imgMD.XRes, imgMD.YRes), imgMD.ImageMapPtr, (int)imgMD.DataSize, imageBitmap.BackBufferStride);
+                    imageBitmap.Unlock();
                 }
 
-                return _imageBitmap;
+                return imageBitmap;
             }
         }
 
@@ -109,51 +100,33 @@ namespace Nui
         {
             get
             {
-                if (_depthBitmap != null)
+                if (depthBitmap != null)
                 {
-                    UpdateHistogram(_depthMD);
+                    UpdateHistogram(depthMD);
 
-                    _depthBitmap.Lock();
+                    depthBitmap.Lock();
 
                     unsafe
                     {
                         ushort* pDepth = (ushort*)DepthGenerator.DepthMapPtr.ToPointer();
-                        
-                        for (int y = 0; y < _depthMD.YRes; ++y)
+
+                        for (int y = 0; y < depthMD.YRes; ++y)
                         {
-                            byte* pDest = (byte*)_depthBitmap.BackBuffer.ToPointer() + y * _depthBitmap.BackBufferStride;
-                            for (int x = 0; x < _depthMD.XRes; ++x, ++pDepth, pDest += 3)
+                            byte* pDest = (byte*)depthBitmap.BackBuffer.ToPointer() + y * depthBitmap.BackBufferStride;
+                            for (int x = 0; x < depthMD.XRes; ++x, ++pDepth, pDest += 3)
                             {
                                 byte pixel;
                                 pixel = (byte)Histogram[*pDepth];
-
-                                if (surfaceModelDepthMap == null || isCalibrating)
-                                {
-                                    pDest[0] = 0;
-                                    pDest[1] = 0;
-                                    pDest[2] = pixel;
-                                    //pixel = (byte)Histogram[*pDepth];
-                                }
-                                else
-                                {
-                                    //double surfaceDepth = surfaceModelNoiseMap[y, x] * 5;
-                                    double surfaceNoiseDepth = SurfaceNoiseDepth;
-                                    double touchBottomDepth = surfaceModelDepthMap[y, x] - surfaceNoiseDepth;
-
-                                    pDest[0] = (*pDepth > touchBottomDepth - SurfaceShellDepth) ? (byte)0 : (byte)128;    //R: too far from surface
-                                    pDest[1] = (*pDepth < touchBottomDepth) ? (byte)0 : (byte)128;   //G: too near to surface
-                                    //pDest[2] = (pDest[0] > 0 || pDest[1] > 0) ? (byte)0 : (byte)255;
-                                    pDest[2] = (pDest[0] > 0 || pDest[1] > 0) ? (byte)0 : (byte)(((double)touchBottomDepth - *pDepth) / SurfaceShellDepth * 255);
-                                }
+                                pDest[0] = pDest[1] = pDest[2] = pixel;
                             }
                         }
                     }
 
-                    _depthBitmap.AddDirtyRect(new Int32Rect(0, 0, _depthMD.XRes, _depthMD.YRes));
-                    _depthBitmap.Unlock();
+                    depthBitmap.AddDirtyRect(new Int32Rect(0, 0, depthMD.XRes, depthMD.YRes));
+                    depthBitmap.Unlock();
                 }
 
-                return _depthBitmap;
+                return depthBitmap;
             }
         }
 
@@ -204,50 +177,9 @@ namespace Nui
             InitializeCamera(configuration);
             InitializeBitmaps();
 
-            handSensor = new HandSensor(Context);
+            handTracker = new HandTracker(Context);
 
             InitializeThread();
-        }
-
-        public void startCalibrate()
-        {
-            surfaceModelDepthMap = new double[_depthMD.YRes, _depthMD.XRes];
-            surfaceModelNoiseMap = new double[_depthMD.YRes, _depthMD.XRes];
-
-            for (int y = 0; y < _depthMD.YRes; ++y)
-            {
-                for (int x = 0; x < _depthMD.XRes; ++x)
-                {
-                    surfaceModelDepthMap[y, x] = 0;
-                    surfaceModelNoiseMap[y, x] = 0;
-                }
-            }
-
-            calibrateFrameCount = 0;
-            isCalibrating = true;
-        }
-
-        public void stopCalibrate()
-        {
-            isCalibrating = false;
-
-            double avg = 0;
-            for (int y = 0; y < _depthMD.YRes; ++y)
-            {
-                for (int x = 0; x < _depthMD.XRes; ++x)
-                {
-                    double test1 = surfaceModelNoiseMap[y, x] / calibrateFrameCount;    //E(X^2)
-                    double test2 = Math.Pow(surfaceModelDepthMap[y, x] / calibrateFrameCount, 2);   //(EX)^2
-
-                    surfaceModelDepthMap[y, x] /= calibrateFrameCount;  //average distance
-                    surfaceModelNoiseMap[y, x] = Math.Sqrt(surfaceModelNoiseMap[y, x] / calibrateFrameCount - Math.Pow(surfaceModelDepthMap[y, x], 2));
-                        //calculate the standard deviation
-                    
-                    avg += double.IsNaN(surfaceModelNoiseMap[y, x]) ? 0 : surfaceModelNoiseMap[y, x];   //FIXME: why there is NaN?
-                }
-            }
-            avg /= (_depthMD.YRes * _depthMD.XRes);
-            Trace.WriteLine("Average Noise: " + avg.ToString());
         }
 
         #endregion
@@ -260,17 +192,9 @@ namespace Nui
         /// <param name="configuration">Configuration file path.</param>
         private void InitializeCamera(string configuration)
         {
-            try
-            {
-                //Context = new Context(configuration);
-                ScriptNode scriptNode;
-                Context.CreateFromXmlFile(configuration, out scriptNode);
-                Context = scriptNode.Context;
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
+            ScriptNode scriptNode;
+            Context.CreateFromXmlFile(configuration, out scriptNode);
+            Context = scriptNode.Context;
 
             ImageGenerator = Context.FindExistingNode(NodeType.Image) as ImageGenerator;
             DepthGenerator = Context.FindExistingNode(NodeType.Depth) as DepthGenerator;
@@ -283,17 +207,13 @@ namespace Nui
         /// </summary>
         private void InitializeBitmaps()
         {
-            //MapOutputMode mapMode = DepthGenerator.GetMapOutputMode();
             MapOutputMode mapMode = DepthGenerator.MapOutputMode;
-
-            //int width = (int)mapMode.nXRes;
-            //int height = (int)mapMode.nYRes;
-
+            
             int width = mapMode.XRes;
             int height = mapMode.YRes;
 
-            _imageBitmap = new WriteableBitmap(width, height, DPI_X, DPI_Y, PixelFormats.Rgb24, null);
-            _depthBitmap = new WriteableBitmap(width, height, DPI_X, DPI_Y, PixelFormats.Rgb24, null);
+            imageBitmap = new WriteableBitmap(width, height, DPI_X, DPI_Y, PixelFormats.Rgb24, null);
+            depthBitmap = new WriteableBitmap(width, height, DPI_X, DPI_Y, PixelFormats.Rgb24, null);
         }
 
         /// <summary>
@@ -301,11 +221,11 @@ namespace Nui
         /// </summary>
         private void InitializeThread()
         {
-            _isRunning = true;
+            isRunning = true;
 
-            _cameraThread = new Thread(CameraThread);
-            _cameraThread.IsBackground = true;
-            _cameraThread.Start();
+            cameraThread = new Thread(CameraThread);
+            cameraThread.IsBackground = true;
+            cameraThread.Start();
         }
 
         /// <summary>
@@ -313,35 +233,12 @@ namespace Nui
         /// </summary>
         private unsafe void CameraThread()
         {
-            while (_isRunning)
+            while (isRunning)
             {
                 Context.WaitAndUpdateAll();
 
-                ImageGenerator.GetMetaData(_imgMD);
-                DepthGenerator.GetMetaData(_depthMD);
-
-                if (isCalibrating)
-                {
-                    refineSurfaceModel();
-                    calibrateFrameCount++;
-                }
-            }
-        }
-
-        private void refineSurfaceModel()
-        {
-            unsafe
-            {
-                ushort* pDepth = (ushort*)DepthGenerator.DepthMapPtr.ToPointer();
-
-                for (int y = 0; y < _depthMD.YRes; ++y)
-                {
-                    for (int x = 0; x < _depthMD.XRes; ++x, ++pDepth)
-                    {
-                        surfaceModelDepthMap[y, x] += (double)*pDepth;    //any accurate problem?
-                        surfaceModelNoiseMap[y, x] += (double)*pDepth * (double)*pDepth;
-                    }
-                }
+                ImageGenerator.GetMetaData(imgMD);
+                DepthGenerator.GetMetaData(depthMD);
             }
         }
 
@@ -394,12 +291,12 @@ namespace Nui
         /// </summary>
         public void Dispose()
         {
-            _imageBitmap = null;
-            _depthBitmap = null;
-            _isRunning = false;
-            _cameraThread.Join();
+            imageBitmap = null;
+            depthBitmap = null;
+            isRunning = false;
+            cameraThread.Join();
             Context.Dispose();
-            _cameraThread = null;
+            cameraThread = null;
             Context = null;
         }
 
