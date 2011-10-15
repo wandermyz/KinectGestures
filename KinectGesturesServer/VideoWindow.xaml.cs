@@ -108,6 +108,10 @@ namespace KinectGesturesServer
                     case VideoType.Depth:
                         videoImage.Source = sensor.DepthImageSource;
                         break;
+
+                    case VideoType.MultiTouch:
+                        videoImage.Source = sensor.MultiTouchTracker.MultiTouchImageSource;
+                        break;
                 }
             });
         }
@@ -124,5 +128,6 @@ namespace KinectGesturesServer
     {
         Raw,
         Depth,
+        MultiTouch,
     }
 }

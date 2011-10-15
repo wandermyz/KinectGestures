@@ -80,6 +80,7 @@
     </ApplicationDefinition>
     <Compile Include="HandTracker.cs" />
     <Compile Include="IntColorConverter.cs" />
+    <Compile Include="MultiTouchTracker.cs" />
     <Compile Include="NuiSensor.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="TrackingDataControl.xaml.cs">

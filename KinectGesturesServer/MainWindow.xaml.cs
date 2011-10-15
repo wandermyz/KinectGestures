@@ -20,7 +20,7 @@ namespace KinectGesturesServer
     public partial class MainWindow : Window
     {
         private NuiSensor nuiSensor;
-        private VideoWindow rawVideoWindow, depthVideoWindow;
+        private VideoWindow rawVideoWindow, depthVideoWindow, multiTouchVideoWindow;
         private Dictionary<int, TrackingDataControl> handTrackingControlMap;
         private Server server;
         
@@ -40,60 +40,63 @@ namespace KinectGesturesServer
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            if (rawVideoWindow != null)
+            {
+                rawVideoWindow.Close();
+            }
+
+            if (depthVideoWindow != null)
+            {
+                depthVideoWindow.Close();
+            }
+
+            if (multiTouchVideoWindow != null)
+            {
+                multiTouchVideoWindow.Close();
+            }
+
             server.Stop();
             nuiSensor.Dispose();
         }
 
         private void rawVideoToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (rawVideoToggleButton.IsChecked.GetValueOrDefault(false))
-            {
-                if (rawVideoWindow != null)
-                {
-                    rawVideoWindow.Close();
-                }
-
-                rawVideoWindow = new VideoWindow();
-                rawVideoWindow.SetSensorVideo(nuiSensor, VideoType.Raw);
-                rawVideoWindow.Closed += delegate(object cSender, EventArgs cArgs)
-                {
-                    rawVideoToggleButton.IsChecked = false;
-                };
-                rawVideoWindow.Show();
-            }
-            else
-            {
-                if (rawVideoWindow != null)
-                {
-                    rawVideoWindow.Close();
-                    rawVideoWindow = null;
-                }
-            }
+            handleVideoToggleButtonClick(rawVideoToggleButton, ref rawVideoWindow, VideoType.Raw);
         }
 
         private void depthVideoToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (depthVideoToggleButton.IsChecked.GetValueOrDefault(false))
+            handleVideoToggleButtonClick(depthVideoToggleButton, ref depthVideoWindow, VideoType.Depth);
+        }
+
+        private void multiTouchVideoToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            handleVideoToggleButtonClick(multiTouchVideoToggleButton, ref multiTouchVideoWindow, VideoType.MultiTouch);
+        }
+
+        private void handleVideoToggleButtonClick(System.Windows.Controls.Primitives.ToggleButton button, ref VideoWindow window, VideoType videoType)
+        {
+            if (button.IsChecked.GetValueOrDefault(false))
             {
-                if (depthVideoWindow != null)
+                if (window != null)
                 {
-                    depthVideoWindow.Close();
+                    window.Close();
                 }
 
-                depthVideoWindow = new VideoWindow();
-                depthVideoWindow.SetSensorVideo(nuiSensor, VideoType.Depth);
-                depthVideoWindow.Closed += delegate(object cSender, EventArgs cArgs)
+                window = new VideoWindow();
+                window.SetSensorVideo(nuiSensor, videoType);
+                window.Closed += delegate(object cSender, EventArgs cArgs)
                 {
-                    depthVideoToggleButton.IsChecked = false;
+                    button.IsChecked = false;
                 };
-                depthVideoWindow.Show();
+                window.Show();
             }
             else
             {
-                if (depthVideoWindow != null)
+                if (window != null)
                 {
-                    depthVideoWindow.Close();
-                    depthVideoWindow = null;
+                    window.Close();
+                    window = null;
                 }
             }
         }
@@ -142,6 +145,75 @@ namespace KinectGesturesServer
                handTrackingStackPanel.Children.Remove(handTrackingControlMap[e.UserID]);
                handTrackingControlMap.Remove(e.UserID);
            });
+        }
+
+        private void thresholdSliders_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (sender == noiseThresholdSlider)
+            {
+                if (fingerThresholdSlider.Value < e.NewValue - double.Epsilon)
+                {
+                    fingerThresholdSlider.Value = e.NewValue;
+                }
+
+                if (blindThresholdSlider.Value < e.NewValue - double.Epsilon)
+                {
+                    blindThresholdSlider.Value = e.NewValue;
+                }
+
+                noiseThresholdTextBox.Text = e.NewValue.ToString("0.00");
+                nuiSensor.MultiTouchTracker.NoiseThreshold = e.NewValue;
+            }
+            else if (sender == fingerThresholdSlider)
+            {
+                if (e.NewValue < noiseThresholdSlider.Value - double.Epsilon)
+                {
+                    e.Handled = false;
+                    fingerThresholdSlider.Value = noiseThresholdSlider.Value;
+                }
+                else
+                {
+                    if (blindThresholdSlider.Value < e.NewValue - double.Epsilon)
+                    {
+                        blindThresholdSlider.Value = e.NewValue;
+                    }
+
+                    fingerThresholdTextBox.Text = e.NewValue.ToString("0.00");
+                    nuiSensor.MultiTouchTracker.FingerThreshold = e.NewValue;
+                }
+            }
+            else if (sender == blindThresholdSlider)
+            {
+                if (e.NewValue < fingerThresholdSlider.Value - double.Epsilon)
+                {
+                    e.Handled = false;
+                    blindThresholdSlider.Value = fingerThresholdSlider.Value;
+                }
+                else
+                {
+                    blindThresholdTextBox.Text = e.NewValue.ToString("0.00");
+                    nuiSensor.MultiTouchTracker.BlindThreshold = e.NewValue;
+                }
+            }
+        }
+
+        private void calibrationButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (nuiSensor.MultiTouchTracker.CalibrationState == CalibrationState.None || nuiSensor.MultiTouchTracker.CalibrationState == CalibrationState.Finished)
+            {
+                calibrationButton.Content = "Calibrating...";
+                calibrationButton.IsEnabled = false;
+
+                nuiSensor.MultiTouchTracker.Calibrate(5000000, delegate() 
+                {
+                    Dispatcher.BeginInvoke((Action)delegate()
+                        {
+                            calibrationButton.IsEnabled = true;
+                            calibrationButton.Content = "Calibrate";
+                        }, null);
+                });
+
+            }
         }
 
     }

@@ -24,12 +24,12 @@ namespace KinectGesturesServer
         /// <summary>
         /// Horizontal bitmap dpi.
         /// </summary>
-        private readonly int DPI_X = 96;
+        public const int DPI_X = 96;
 
         /// <summary>
         /// Vertical bitmap dpi.
         /// </summary>
-        private readonly int DPI_Y = 96;
+        public const int DPI_Y = 96;
 
         #endregion
 
@@ -65,13 +65,9 @@ namespace KinectGesturesServer
         /// </summary>
         private DepthMetaData depthMD = new DepthMetaData();
 
-        private HandTracker handTracker;
-
         #endregion
 
         #region Properties
-
-        public HandTracker HandTracker { get { return handTracker; } }
 
         #region Bitmap properties
 
@@ -103,7 +99,6 @@ namespace KinectGesturesServer
                 if (depthBitmap != null)
                 {
                     UpdateHistogram(depthMD);
-
                     depthBitmap.Lock();
 
                     unsafe
@@ -149,13 +144,22 @@ namespace KinectGesturesServer
         /// </summary>
         public DepthGenerator DepthGenerator { get; private set; }
 
+        public DepthMetaData DepthMetaData { get { return depthMD; } }
+        public ImageMetaData ImageMetaData { get {return imgMD;}}
+
         /// <summary>
         /// OpenNI histogram.
         /// </summary>
         public int[] Histogram { get; private set; }
+        #endregion
+
+        public HandTracker HandTracker { get; private set; }
+        public MultiTouchTracker MultiTouchTracker { get; private set; }
 
         #endregion
 
+        #region Events
+        public event EventHandler<FrameUpdateEventArgs> FrameUpdate;
         #endregion
 
         #region Constructor
@@ -177,7 +181,8 @@ namespace KinectGesturesServer
             InitializeCamera(configuration);
             InitializeBitmaps();
 
-            handTracker = new HandTracker(Context);
+            HandTracker = new HandTracker(Context);
+            MultiTouchTracker = new MultiTouchTracker(this);
 
             InitializeThread();
         }
@@ -239,6 +244,11 @@ namespace KinectGesturesServer
 
                 ImageGenerator.GetMetaData(imgMD);
                 DepthGenerator.GetMetaData(depthMD);
+
+                if (FrameUpdate != null)
+                {
+                    FrameUpdate(this, new FrameUpdateEventArgs(imgMD, depthMD));
+                }
             }
         }
 
@@ -301,5 +311,17 @@ namespace KinectGesturesServer
         }
 
         #endregion
+
+        public class FrameUpdateEventArgs : EventArgs
+        {
+            public ImageMetaData ImageMetaData { get; private set; }
+            public DepthMetaData DepthMetaData { get; private set; }
+
+            public FrameUpdateEventArgs(ImageMetaData imgMD, DepthMetaData depthMD)
+            {
+                this.ImageMetaData = imgMD;
+                this.DepthMetaData = depthMD;
+            }
+        }
     }
 }

@@ -5,8 +5,9 @@
     <StackPanel Orientation="Vertical">
         <GroupBox Header="Preview Video" Margin="5">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5">
-                <ToggleButton Name="rawVideoToggleButton" Content="Raw Video" Margin="20, 0, 20, 0" Click="rawVideoToggleButton_Click"/>
-                <ToggleButton Name="depthVideoToggleButton" Content="Depth Video" Margin="20, 0, 20, 0" Click="depthVideoToggleButton_Click"/>
+                <ToggleButton Name="rawVideoToggleButton" Content="Raw Video" Margin="5, 0, 5, 0" Click="rawVideoToggleButton_Click"/>
+                <ToggleButton Name="depthVideoToggleButton" Content="Depth Video" Margin="5, 0, 5, 0" Click="depthVideoToggleButton_Click"/>
+                <ToggleButton Name="multiTouchVideoToggleButton" Content="Multi-touch Video" Margin="5, 0, 5, 0" Click="multiTouchVideoToggleButton_Click"/>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Hand Tracking" Margin="5">
@@ -35,8 +36,8 @@
         <GroupBox Header="Finger Tracking" Margin="5">
             <Grid Name="fingerTrackingGrid">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="40"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -44,11 +45,42 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Label Grid.Row="0" Grid.Column="0">ID</Label>
-                <Label Grid.Row="0" Grid.Column="1">Color</Label>
+                <Label Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center">ID</Label>
+                <Label Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center">Color</Label>
                 <Label Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center">X</Label>
                 <Label Grid.Row="0" Grid.Column="3" HorizontalAlignment="Center">Y</Label>
                 <Label Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center">Z</Label>
+            </Grid>
+        </GroupBox>
+        <GroupBox Header="Multi-touch Settings">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="100"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="70"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Row="0" Grid.Column="0" Grid.RowSpan="4" Name="calibrationButton" HorizontalAlignment="Center" VerticalAlignment="Center" Click="calibrationButton_Click">Calibrate</Button>
+
+                <Slider Grid.Row="1" Grid.Column="1" Name="noiseThresholdSlider" Minimum="0" Maximum="500" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5" />
+                <TextBox Grid.Row="2" Grid.Column="1" Name="noiseThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">Noise</Label>
+                
+                <Slider Grid.Row="1" Grid.Column="2" Name="fingerThresholdSlider" Minimum="0" Maximum="500" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="2" Name="fingerThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center">Finger</Label>
+
+                <Slider Grid.Row="1" Grid.Column="3" Name="blindThresholdSlider" Minimum="0" Maximum="500" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="3" Name="blindThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center">Blind</Label>
+            
             </Grid>
         </GroupBox>
     </StackPanel>
