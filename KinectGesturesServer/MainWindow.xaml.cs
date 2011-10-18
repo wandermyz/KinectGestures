@@ -20,9 +20,10 @@ namespace KinectGesturesServer
     public partial class MainWindow : Window
     {
         private NuiSensor nuiSensor;
-        private VideoWindow rawVideoWindow, depthVideoWindow, multiTouchVideoWindow;
+        private VideoWindow rawVideoWindow, depthVideoWindow, multiTouchVideoWindow, multiTouchResultVideoWindow;
         private Dictionary<int, TrackingDataControl> handTrackingControlMap;
         private Server server;
+        private bool isSlidersValueLoaded = false;
         
         public MainWindow()
         {
@@ -36,6 +37,14 @@ namespace KinectGesturesServer
 
             server = new Server(nuiSensor);
             server.Start();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            blindThresholdSlider.Value = Properties.Settings.Default.BlindThreshold;
+            fingerThresholdSlider.Value = Properties.Settings.Default.FingerThreshold;
+            noiseThresholdSlider.Value = Properties.Settings.Default.NoiseThreshold;
+            isSlidersValueLoaded = true;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -55,6 +64,11 @@ namespace KinectGesturesServer
                 multiTouchVideoWindow.Close();
             }
 
+            if (multiTouchResultVideoWindow != null)
+            {
+                multiTouchResultVideoWindow.Close();
+            }
+
             server.Stop();
             nuiSensor.Dispose();
         }
@@ -72,6 +86,12 @@ namespace KinectGesturesServer
         private void multiTouchVideoToggleButton_Click(object sender, RoutedEventArgs e)
         {
             handleVideoToggleButtonClick(multiTouchVideoToggleButton, ref multiTouchVideoWindow, VideoType.MultiTouch);
+        }
+
+
+        private void multiTouchResultVideoToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            handleVideoToggleButtonClick(multiTouchResultVideoToggleButton, ref multiTouchResultVideoWindow, VideoType.MultiTouchResult);
         }
 
         private void handleVideoToggleButtonClick(System.Windows.Controls.Primitives.ToggleButton button, ref VideoWindow window, VideoType videoType)
@@ -149,6 +169,8 @@ namespace KinectGesturesServer
 
         private void thresholdSliders_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            e.Handled = true;
+
             if (sender == noiseThresholdSlider)
             {
                 if (fingerThresholdSlider.Value < e.NewValue - double.Epsilon)
@@ -194,6 +216,14 @@ namespace KinectGesturesServer
                     blindThresholdTextBox.Text = e.NewValue.ToString("0.00");
                     nuiSensor.MultiTouchTracker.BlindThreshold = e.NewValue;
                 }
+            }
+
+            if (e.Handled && isSlidersValueLoaded)
+            {
+                Properties.Settings.Default.NoiseThreshold = noiseThresholdSlider.Value;
+                Properties.Settings.Default.FingerThreshold = fingerThresholdSlider.Value;
+                Properties.Settings.Default.BlindThreshold = blindThresholdSlider.Value;
+                Properties.Settings.Default.Save();
             }
         }
 

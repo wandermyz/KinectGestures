@@ -1,13 +1,18 @@
 ﻿<Window x:Class="KinectGesturesServer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="KinectGestures Control Panel" Height="480" Width="320" Closing="Window_Closing">
+        Title="KinectGestures Control Panel" Height="480" Width="320" Loaded="Window_Loaded" Closing="Window_Closing">
     <StackPanel Orientation="Vertical">
         <GroupBox Header="Preview Video" Margin="5">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5">
-                <ToggleButton Name="rawVideoToggleButton" Content="Raw Video" Margin="5, 0, 5, 0" Click="rawVideoToggleButton_Click"/>
-                <ToggleButton Name="depthVideoToggleButton" Content="Depth Video" Margin="5, 0, 5, 0" Click="depthVideoToggleButton_Click"/>
-                <ToggleButton Name="multiTouchVideoToggleButton" Content="Multi-touch Video" Margin="5, 0, 5, 0" Click="multiTouchVideoToggleButton_Click"/>
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="5">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ToggleButton Name="rawVideoToggleButton" Content="Raw" Margin="5" Click="rawVideoToggleButton_Click"/>
+                    <ToggleButton Name="depthVideoToggleButton" Content="Depth" Margin="5" Click="depthVideoToggleButton_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ToggleButton Name="multiTouchVideoToggleButton" Content="Multi-touch" Margin="5" Click="multiTouchVideoToggleButton_Click"/>
+                    <ToggleButton Name="multiTouchResultVideoToggleButton" Content="Multi-touch Result" Margin="5" Click="multiTouchResultVideoToggleButton_Click"/>
+                </StackPanel>
             </StackPanel>
         </GroupBox>
         <GroupBox Header="Hand Tracking" Margin="5">
@@ -69,15 +74,15 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Row="0" Grid.Column="0" Grid.RowSpan="4" Name="calibrationButton" HorizontalAlignment="Center" VerticalAlignment="Center" Click="calibrationButton_Click">Calibrate</Button>
 
-                <Slider Grid.Row="1" Grid.Column="1" Name="noiseThresholdSlider" Minimum="0" Maximum="500" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5" />
+                <Slider Grid.Row="1" Grid.Column="1" Name="noiseThresholdSlider" Minimum="0" Maximum="100" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5" />
                 <TextBox Grid.Row="2" Grid.Column="1" Name="noiseThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
                 <Label Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">Noise</Label>
                 
-                <Slider Grid.Row="1" Grid.Column="2" Name="fingerThresholdSlider" Minimum="0" Maximum="500" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <Slider Grid.Row="1" Grid.Column="2" Name="fingerThresholdSlider" Minimum="0" Maximum="100" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
                 <TextBox Grid.Row="2" Grid.Column="2" Name="fingerThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
                 <Label Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center">Finger</Label>
 
-                <Slider Grid.Row="1" Grid.Column="3" Name="blindThresholdSlider" Minimum="0" Maximum="500" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <Slider Grid.Row="1" Grid.Column="3" Name="blindThresholdSlider" Minimum="0" Maximum="100" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
                 <TextBox Grid.Row="2" Grid.Column="3" Name="blindThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
                 <Label Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center">Blind</Label>
             

@@ -24,11 +24,14 @@ namespace KinectGesturesServer
         private BackgroundWorker refreshWorker;
         private Dictionary<int, Ellipse> handPoints;
 
+        private List<Ellipse> fingerPoints;
+
         public VideoWindow()
         {
             InitializeComponent();
 
             handPoints = new Dictionary<int, Ellipse>();
+            fingerPoints = new List<Ellipse>();
         }
 
         public void SetSensorVideo(NuiSensor sensor, VideoType videoType)
@@ -44,6 +47,22 @@ namespace KinectGesturesServer
             refreshWorker = new BackgroundWorker();
             refreshWorker.DoWork += new DoWorkEventHandler(refreshWorker_DoWork);
             CompositionTarget.Rendering += new EventHandler(CompositionTarget_Rendering);
+
+            //create finger points
+            for (int i = 0; i < MultiTouchTracker.MAX_FINGERS; i++)
+            {
+                Ellipse ellipse = new Ellipse()
+                {
+                    Width = 10,
+                    Height = 10,
+                    Fill = Brushes.Orange,
+                    Stroke = Brushes.White,
+                    StrokeThickness = 2,
+                    Opacity = 0,
+                };
+                fingerPoints.Add(ellipse);
+                canvas.Children.Add(ellipse);
+            }
         }
 
         void HandTracker_HandUpdate(object sender, HandUpdateEventArgs e)
@@ -112,6 +131,24 @@ namespace KinectGesturesServer
                     case VideoType.MultiTouch:
                         videoImage.Source = sensor.MultiTouchTracker.MultiTouchImageSource;
                         break;
+
+                    case VideoType.MultiTouchResult:
+                        videoImage.Source = sensor.MultiTouchTracker.MultiTouchResultImageSource;
+                        break;
+                }
+
+                //draw fingers
+                var fingers = sensor.MultiTouchTracker.Fingers;
+                for (int i = 0; i < fingers.Count; i++)
+                {
+                    Canvas.SetLeft(fingerPoints[i], fingers[i].X);
+                    Canvas.SetTop(fingerPoints[i], fingers[i].Y);
+                    fingerPoints[i].Opacity = 1.0;
+                }
+
+                for (int i = fingers.Count; i < fingerPoints.Count; i++)
+                {
+                    fingerPoints[i].Opacity = 0;
                 }
             });
         }
@@ -129,5 +166,6 @@ namespace KinectGesturesServer
         Raw,
         Depth,
         MultiTouch,
+        MultiTouchResult
     }
 }
