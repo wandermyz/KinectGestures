@@ -107,10 +107,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="depth.h" />
     <ClInclude Include="dip.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="morphological.cpp" />
+    <ClCompile Include="derivativeFingerDetector.cpp" />
     <ClCompile Include="segmentation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

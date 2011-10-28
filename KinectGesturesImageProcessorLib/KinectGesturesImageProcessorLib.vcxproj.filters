@@ -18,12 +18,18 @@
     <ClInclude Include="dip.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="depth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="morphological.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="segmentation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="derivativeFingerDetector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

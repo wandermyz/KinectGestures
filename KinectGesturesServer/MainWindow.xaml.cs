@@ -184,7 +184,7 @@ namespace KinectGesturesServer
                 }
 
                 noiseThresholdTextBox.Text = e.NewValue.ToString("0.00");
-                nuiSensor.MultiTouchTracker.NoiseThreshold = e.NewValue;
+                //nuiSensor.MultiTouchTracker.NoiseThreshold = e.NewValue;
             }
             else if (sender == fingerThresholdSlider)
             {
@@ -201,7 +201,7 @@ namespace KinectGesturesServer
                     }
 
                     fingerThresholdTextBox.Text = e.NewValue.ToString("0.00");
-                    nuiSensor.MultiTouchTracker.FingerThreshold = e.NewValue;
+                    //nuiSensor.MultiTouchTracker.FingerThreshold = e.NewValue;
                 }
             }
             else if (sender == blindThresholdSlider)
@@ -214,7 +214,7 @@ namespace KinectGesturesServer
                 else
                 {
                     blindThresholdTextBox.Text = e.NewValue.ToString("0.00");
-                    nuiSensor.MultiTouchTracker.BlindThreshold = e.NewValue;
+                    //nuiSensor.MultiTouchTracker.BlindThreshold = e.NewValue;
                 }
             }
 
@@ -229,7 +229,7 @@ namespace KinectGesturesServer
 
         private void calibrationButton_Click(object sender, RoutedEventArgs e)
         {
-            if (nuiSensor.MultiTouchTracker.CalibrationState == CalibrationState.None || nuiSensor.MultiTouchTracker.CalibrationState == CalibrationState.Finished)
+            /*if (nuiSensor.MultiTouchTracker.CalibrationState == CalibrationState.None || nuiSensor.MultiTouchTracker.CalibrationState == CalibrationState.Finished)
             {
                 calibrationButton.Content = "Calibrating...";
                 calibrationButton.IsEnabled = false;
@@ -243,7 +243,7 @@ namespace KinectGesturesServer
                         }, null);
                 });
 
-            }
+            }*/
         }
 
     }

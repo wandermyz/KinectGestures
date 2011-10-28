@@ -154,8 +154,8 @@ namespace KinectGesturesServer
         #endregion
 
         public HandTracker HandTracker { get; private set; }
-        public MultiTouchTracker MultiTouchTracker { get; private set; }
-
+        //public MultiTouchTracker MultiTouchTracker { get; private set; }
+        public MultiTouchTrackerOmni MultiTouchTrackerOmni { get; private set; }
         #endregion
 
         #region Events
@@ -182,7 +182,8 @@ namespace KinectGesturesServer
             InitializeBitmaps();
 
             HandTracker = new HandTracker(Context);
-            MultiTouchTracker = new MultiTouchTracker(this);
+            //MultiTouchTracker = new MultiTouchTracker(this);
+            MultiTouchTrackerOmni = new MultiTouchTrackerOmni(this);
 
             InitializeThread();
         }
@@ -301,6 +302,8 @@ namespace KinectGesturesServer
         /// </summary>
         public void Dispose()
         {
+            MultiTouchTrackerOmni.Dispose();
+
             imageBitmap = null;
             depthBitmap = null;
             isRunning = false;

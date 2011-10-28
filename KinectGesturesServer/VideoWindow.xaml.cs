@@ -129,16 +129,17 @@ namespace KinectGesturesServer
                         break;
 
                     case VideoType.MultiTouch:
-                        videoImage.Source = sensor.MultiTouchTracker.MultiTouchImageSource;
+                        //videoImage.Source = sensor.MultiTouchTracker.MultiTouchImageSource;
+                        videoImage.Source = sensor.MultiTouchTrackerOmni.OutputImageSource;                        
                         break;
 
                     case VideoType.MultiTouchResult:
-                        videoImage.Source = sensor.MultiTouchTracker.MultiTouchResultImageSource;
+                        //videoImage.Source = sensor.MultiTouchTracker.MultiTouchResultImageSource;
                         break;
                 }
 
                 //draw fingers
-                var fingers = sensor.MultiTouchTracker.Fingers;
+                /*var fingers = sensor.MultiTouchTracker.Fingers;
                 for (int i = 0; i < fingers.Count; i++)
                 {
                     Canvas.SetLeft(fingerPoints[i], fingers[i].X);
@@ -149,7 +150,7 @@ namespace KinectGesturesServer
                 for (int i = fingers.Count; i < fingerPoints.Count; i++)
                 {
                     fingerPoints[i].Opacity = 0;
-                }
+                }*/
             });
         }
 
