@@ -15,6 +15,11 @@
                 </StackPanel>
             </StackPanel>
         </GroupBox>
+        <GroupBox Header="Capture" Margin="5">
+            <Grid>
+                <Button Name="captureButton" HorizontalAlignment="Center" Click="captureButton_Click">Capture</Button>
+            </Grid>
+        </GroupBox>
         <GroupBox Header="Hand Tracking" Margin="5">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -74,16 +79,16 @@
                 </Grid.ColumnDefinitions>
                 <Button Grid.Row="0" Grid.Column="0" Grid.RowSpan="4" Name="calibrationButton" HorizontalAlignment="Center" VerticalAlignment="Center" Click="calibrationButton_Click">Calibrate</Button>
 
-                <Slider Grid.Row="1" Grid.Column="1" Name="noiseThresholdSlider" Minimum="0" Maximum="100" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5" />
-                <TextBox Grid.Row="2" Grid.Column="1" Name="noiseThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">Noise</Label>
+                <Slider Grid.Row="1" Grid.Column="1" Name="threshold1Slider" Minimum="0" Maximum="50" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="0.1" LargeChange="5" />
+                <TextBox Grid.Row="2" Grid.Column="1" Name="threshold1TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" Content="FingerMin"></Label>
                 
-                <Slider Grid.Row="1" Grid.Column="2" Name="fingerThresholdSlider" Minimum="0" Maximum="100" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
-                <TextBox Grid.Row="2" Grid.Column="2" Name="fingerThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center">Finger</Label>
+                <Slider Grid.Row="1" Grid.Column="2" Name="threshold2Slider" Minimum="0" Maximum="50" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="2" Name="threshold2TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" Content="FingerMax"></Label>
 
-                <Slider Grid.Row="1" Grid.Column="3" Name="blindThresholdSlider" Minimum="0" Maximum="100" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
-                <TextBox Grid.Row="2" Grid.Column="3" Name="blindThresholdTextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Slider Grid.Row="1" Grid.Column="3" Name="threshold3Slider" Minimum="0" Maximum="50" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="3" Name="threshold3TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
                 <Label Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center">Blind</Label>
             
             </Grid>

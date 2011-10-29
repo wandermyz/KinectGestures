@@ -160,6 +160,7 @@ namespace KinectGesturesServer
 
         #region Events
         public event EventHandler<FrameUpdateEventArgs> FrameUpdate;
+        public event EventHandler<CaptureEventArgs> CaptureRequested;
         #endregion
 
         #region Constructor
@@ -313,6 +314,15 @@ namespace KinectGesturesServer
             Context = null;
         }
 
+        public void Capture(string folder, string fileNamePrefix)
+        {
+            //TODO capture raw & depth
+            if (CaptureRequested != null)
+            {
+                CaptureRequested(this, new CaptureEventArgs(folder, fileNamePrefix));
+            }
+        }
+
         #endregion
 
         public class FrameUpdateEventArgs : EventArgs
@@ -324,6 +334,17 @@ namespace KinectGesturesServer
             {
                 this.ImageMetaData = imgMD;
                 this.DepthMetaData = depthMD;
+            }
+        }
+
+        public class CaptureEventArgs : EventArgs
+        {
+            public string Folder { get; private set; }
+            public string FileNamePrefix { get; private set; }
+            public CaptureEventArgs(string folder, string fileNamePrefix)
+            {
+                this.Folder = folder;
+                this.FileNamePrefix = fileNamePrefix; 
             }
         }
     }

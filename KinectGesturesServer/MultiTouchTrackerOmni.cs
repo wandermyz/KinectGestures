@@ -6,6 +6,9 @@ using OpenNI;
 using System.Windows.Media.Imaging;
 using System.Windows;
 using System.Windows.Media;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace KinectGesturesServer
 {
@@ -17,12 +20,13 @@ namespace KinectGesturesServer
         #region buffers for multi-touch sensing
         private byte[] bufferOutputColored; 
         private int[] fingersRaw;   //data returned from native side
-        private float[] perspectiveToRealMap;   //save the coordinate in real world for each pixel
         #endregion
 
         private WriteableBitmap outputImageSource;
 
         public List<Point3D> Fingers { get; private set; }
+        public double FingerWidthMin { get; set; }
+        public double FingerWidthMax { get; set; }
 
         public WriteableBitmap OutputImageSource
         {
@@ -62,14 +66,61 @@ namespace KinectGesturesServer
             int bufferSize = width * height * 3;
             bufferOutputColored = new byte[bufferSize];
 
+            sensor.CaptureRequested += new EventHandler<NuiSensor.CaptureEventArgs>(sensor_CaptureRequested);
+
+            double realWorldXToZ, realWorldYToZ;
+            hackXnConvertProjectiveToRealWorld(out realWorldXToZ, out realWorldYToZ);
+
             unsafe
             {
-                ImageProcessorLib.derivativeFingerDetectorInit(null, null, width, height, width, width * 3, sensor.DepthGenerator.DeviceMaxDepth);
+                ImageProcessorLib.derivativeFingerDetectorInit(null, null, width, height, width, width * 3, sensor.DepthGenerator.DeviceMaxDepth, realWorldXToZ, realWorldYToZ);
             }
+        }
+
+        void sensor_CaptureRequested(object sender, NuiSensor.CaptureEventArgs e)
+        {
+            string fileNameH = e.Folder + e.FileNamePrefix + "derivativeH.csv";
+            string fileNameV = e.Folder + e.FileNamePrefix + "derivativeV.csv";
+            string fileNameBmp = e.Folder + e.FileNamePrefix + "derivative.bmp";
+
+            StreamWriter swH = new StreamWriter(fileNameH);
+            StreamWriter swV = new StreamWriter(fileNameV);
+
+            lock (bufferOutputColored)
+            {
+                unsafe
+                {
+                    int* hDerivativeRes, vDerivativeRes;
+                    ImageProcessorLib.derivativeFingerDetectorGetDerivativeFrame(&hDerivativeRes, &vDerivativeRes);
+
+                    for (int i = 0; i < height; i++)
+                    {
+                        for (int j = 0; j < width; j++)
+                        {
+                            swH.Write(hDerivativeRes[i * width + j].ToString() + ", ");
+                            swV.Write(vDerivativeRes[i * width + j].ToString() + ", ");
+                        }
+                        swH.WriteLine();
+                        swV.WriteLine();
+                    }
+                }
+            }
+
+            swH.Close();
+            swV.Close();
+
+            BmpBitmapEncoder bmpEncoder = new BmpBitmapEncoder();
+            bmpEncoder.Frames.Add(BitmapFrame.Create(outputImageSource));
+            FileStream fs = new FileStream(fileNameBmp, FileMode.Create);
+            bmpEncoder.Save(fs);
+            fs.Close();
         }
 
         void sensor_FrameUpdate(object sender, NuiSensor.FrameUpdateEventArgs e)
         {
+            int test;
+            Point3D p1, p2;
+
             lock (bufferOutputColored)
             {
                 unsafe
@@ -77,10 +128,36 @@ namespace KinectGesturesServer
                     fixed (byte* bufferOutputColorPtr = bufferOutputColored)
                     {
                         ushort* pDepth = (ushort*)sensor.DepthMetaData.DepthMapPtr.ToPointer();
-                        ImageProcessorLib.derivativeFingerDetectorWork(pDepth, bufferOutputColorPtr, width, height, width, width * 3);
+                        ImageProcessorLib.derivativeFingerDetectorWork(pDepth, bufferOutputColorPtr, width, height, width, width * 3, FingerWidthMin, FingerWidthMax);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// We need to call xnConvertProjectiveToRealWorld in the native side, but impossible. In this function, 2 internal parameters are used. We use this hack to solve the 2 unknown parameter.
+        /// </summary>
+        private void hackXnConvertProjectiveToRealWorld(out double realWorldXToZ, out double realWorldYToZ)
+        {
+            Random random = new Random(0);
+            Point3D[] testPoints = new Point3D[100];
+
+            for (int i = 0; i < 100; i++)
+            {
+                testPoints[i] = new Point3D(random.Next(0, width - 1), random.Next(0, height - 1), random.Next(0, sensor.DepthGenerator.DeviceMaxDepth - 1));
+            }
+
+            Point3D[] testResults = sensor.DepthGenerator.ConvertProjectiveToRealWorld(testPoints);
+            realWorldXToZ = 0;
+            realWorldYToZ = 0;
+            for (int i = 0; i < testPoints.Length; i++)
+            {
+                realWorldXToZ += testResults[i].X / (testPoints[i].X / width - 0.5) / testResults[i].Z;
+                realWorldYToZ += testResults[i].Y / (0.5 - testPoints[i].Y / height) / testResults[i].Z;
+            }
+
+            realWorldXToZ /= testPoints.Length;
+            realWorldYToZ /= testPoints.Length;
         }
 
         public void Dispose()
