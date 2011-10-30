@@ -41,9 +41,10 @@ namespace KinectGesturesServer
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            threshold1Slider.Value = Properties.Settings.Default.BlindThreshold;
-            threshold2Slider.Value = Properties.Settings.Default.FingerThreshold;
-            threshold3Slider.Value = Properties.Settings.Default.NoiseThreshold;
+            threshold1Slider.Value = Properties.Settings.Default.Threshold1;
+            threshold2Slider.Value = Properties.Settings.Default.Threshold2;
+            threshold3Slider.Value = Properties.Settings.Default.Threshold3;
+            threshold4Slider.Value = Properties.Settings.Default.Threshold4;
             isSlidersValueLoaded = true;
         }
 
@@ -178,11 +179,6 @@ namespace KinectGesturesServer
                     threshold2Slider.Value = e.NewValue;
                 }
 
-                if (threshold3Slider.Value < e.NewValue - double.Epsilon)
-                {
-                    threshold3Slider.Value = e.NewValue;
-                }
-
                 threshold1TextBox.Text = e.NewValue.ToString("0.00");
                 nuiSensor.MultiTouchTrackerOmni.FingerWidthMin = e.NewValue;
             }
@@ -195,34 +191,40 @@ namespace KinectGesturesServer
                 }
                 else
                 {
-                    if (threshold3Slider.Value < e.NewValue - double.Epsilon)
-                    {
-                        threshold3Slider.Value = e.NewValue;
-                    }
-
                     threshold2TextBox.Text = e.NewValue.ToString("0.00");
                     nuiSensor.MultiTouchTrackerOmni.FingerWidthMax = e.NewValue;
                 }
             }
             else if (sender == threshold3Slider)
             {
-                if (e.NewValue < threshold2Slider.Value - double.Epsilon)
+                if (threshold4Slider.Value < e.NewValue - double.Epsilon)
+                {
+                    threshold4Slider.Value = e.NewValue;
+                }
+
+                threshold3TextBox.Text = e.NewValue.ToString("0.00");
+                nuiSensor.MultiTouchTrackerOmni.FingerLengthMin = e.NewValue;
+            }
+            else if (sender == threshold4Slider)
+            {
+                if (e.NewValue < threshold3Slider.Value - double.Epsilon)
                 {
                     e.Handled = false;
-                    threshold3Slider.Value = threshold2Slider.Value;
+                    threshold4Slider.Value = threshold3Slider.Value;
                 }
                 else
                 {
-                    threshold3TextBox.Text = e.NewValue.ToString("0.00");
-                    //nuiSensor.MultiTouchTracker.BlindThreshold = e.NewValue;
+                    threshold4TextBox.Text = e.NewValue.ToString("0.00");
+                    nuiSensor.MultiTouchTrackerOmni.FingerLengthMax = e.NewValue;
                 }
             }
 
             if (e.Handled && isSlidersValueLoaded)
             {
-                Properties.Settings.Default.NoiseThreshold = threshold1Slider.Value;
-                Properties.Settings.Default.FingerThreshold = threshold2Slider.Value;
-                Properties.Settings.Default.BlindThreshold = threshold3Slider.Value;
+                Properties.Settings.Default.Threshold1 = threshold1Slider.Value;
+                Properties.Settings.Default.Threshold2 = threshold2Slider.Value;
+                Properties.Settings.Default.Threshold3 = threshold3Slider.Value;
+                Properties.Settings.Default.Threshold4 = threshold4Slider.Value;
                 Properties.Settings.Default.Save();
             }
         }

@@ -14,6 +14,8 @@ namespace KinectGesturesServer
 {
     public class MultiTouchTrackerOmni
     {
+        private const int MAX_FINGERS = 10;
+
         private NuiSensor sensor;
         private int width, height;
 
@@ -27,6 +29,8 @@ namespace KinectGesturesServer
         public List<Point3D> Fingers { get; private set; }
         public double FingerWidthMin { get; set; }
         public double FingerWidthMax { get; set; }
+        public double FingerLengthMax { get; set; }
+        public double FingerLengthMin { get; set; }
 
         public WriteableBitmap OutputImageSource
         {
@@ -61,7 +65,9 @@ namespace KinectGesturesServer
             height = sensor.DepthGenerator.MapOutputMode.YRes;
 
             outputImageSource = new WriteableBitmap(width, height, NuiSensor.DPI_X, NuiSensor.DPI_Y, PixelFormats.Rgb24, null);
-            //TODO: fingers, maps
+
+            fingersRaw = new int[MAX_FINGERS * 2];
+            Fingers = new List<Point3D>(MAX_FINGERS);
 
             int bufferSize = width * height * 3;
             bufferOutputColored = new byte[bufferSize];
@@ -118,19 +124,28 @@ namespace KinectGesturesServer
 
         void sensor_FrameUpdate(object sender, NuiSensor.FrameUpdateEventArgs e)
         {
-            int test;
-            Point3D p1, p2;
-
+            int fingersNum = 0;
             lock (bufferOutputColored)
             {
                 unsafe
                 {
                     fixed (byte* bufferOutputColorPtr = bufferOutputColored)
                     {
-                        ushort* pDepth = (ushort*)sensor.DepthMetaData.DepthMapPtr.ToPointer();
-                        ImageProcessorLib.derivativeFingerDetectorWork(pDepth, bufferOutputColorPtr, width, height, width, width * 3, FingerWidthMin, FingerWidthMax);
+                        fixed (int* fingerRawPtr = fingersRaw)
+                        {
+                            ushort* pDepth = (ushort*)sensor.DepthMetaData.DepthMapPtr.ToPointer();
+                            fingersNum = ImageProcessorLib.derivativeFingerDetectorWork(pDepth, bufferOutputColorPtr, width, height, width, width * 3, 
+                                FingerWidthMin, FingerWidthMax, FingerLengthMin, FingerLengthMax, 
+                                MAX_FINGERS, fingerRawPtr);
+                        }
                     }
                 }
+            }
+
+            Fingers.Clear();
+            for (int i = 0; i < fingersNum; i++)
+            {
+                Fingers.Add(new Point3D(fingersRaw[2 * i], fingersRaw[2 * i + 1], 0)); 
             }
         }
 

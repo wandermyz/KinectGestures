@@ -26,36 +26,48 @@ namespace KinectGesturesServer.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public double NoiseThreshold {
+        public double Threshold1 {
             get {
-                return ((double)(this["NoiseThreshold"]));
+                return ((double)(this["Threshold1"]));
             }
             set {
-                this["NoiseThreshold"] = value;
+                this["Threshold1"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public double FingerThreshold {
+        public double Threshold2 {
             get {
-                return ((double)(this["FingerThreshold"]));
+                return ((double)(this["Threshold2"]));
             }
             set {
-                this["FingerThreshold"] = value;
+                this["Threshold2"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public double BlindThreshold {
+        public double Threshold3 {
             get {
-                return ((double)(this["BlindThreshold"]));
+                return ((double)(this["Threshold3"]));
             }
             set {
-                this["BlindThreshold"] = value;
+                this["Threshold3"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public double Threshold4 {
+            get {
+                return ((double)(this["Threshold4"]));
+            }
+            set {
+                this["Threshold4"] = value;
             }
         }
     }

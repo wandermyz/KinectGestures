@@ -2,10 +2,15 @@
 #include <memory.h>
 #include <assert.h>
 #include <math.h>
+#include <vector>
+#include <algorithm>
+using namespace std;
 
 //#define FINGER_WIDTH_MIN 2
 //#define FINGER_WIDTH_MAX 40	//in millimeters
 #define FINGER_EDGE_THRESHOLD 1000
+#define STRIP_MAX_BLANK_PIXEL 10
+#define STRIP_DEPTH_DIFF_MAX 
 
 typedef enum
 {
@@ -14,6 +19,23 @@ typedef enum
 	StripMidSmooth,
 	StripFalling
 } StripState;
+
+typedef struct Strip
+{
+	int row;
+	int leftCol, rightCol;
+	bool visited;
+	struct Strip(int row, int leftCol, int rightCol) : row(row), leftCol(leftCol), rightCol(rightCol), visited(false) { }
+} Strip;
+
+typedef struct Finger
+{
+	int tipRow;
+	int tipCol;
+	int pixelLength;
+	struct Finger(int tipRow, int tipCol, int pixelLength) : tipRow(tipRow), tipCol(tipCol), pixelLength(pixelLength) { }
+	bool operator<(const Finger& ref) const { return pixelLength > ref.pixelLength; }	//sort more to less
+} Finger;
 
 static int *hDerivativeRes = NULL, *vDerivativeRes = NULL, *histogram = NULL;
 static byte* tmpPixelBuffer;
@@ -38,13 +60,7 @@ int sobel(proc_para_depth)
 		for (int j = 0; j < width; j++)
 		{
 
-
-			if (i == 240 && j == 320)
-			{
-				int abc = 123;
-			}
-
-			double depthH = 0; //, depthV = 0;
+			double depthH = 0, depthV = 0;
 			for (int ti = 0; ti < 5; ti++)
 			{
 				int neighbor_row = i + ti - tpl_offset;
@@ -59,11 +75,11 @@ int sobel(proc_para_depth)
 
 					ushort srcDepthVal = *srcDepth(neighbor_row, neighbor_col);
 					depthH += tpl[ti][tj] * (srcDepthVal == 0 ? deviceMaxDepth : srcDepthVal);
-					//depthV += tpl[tj][ti] * *srcDepth(neighbor_row, neighbor_col);
+					depthV += tpl[tj][ti] * *srcDepth(neighbor_row, neighbor_col);
 				}
 			}
 			*bufferDepth(hDerivativeRes, i, j) = (int)(depthH + 0.5);
-			//*bufferDepth(vDerivativeRes, i, j) = (int)(depthV + 0.5);
+			*bufferDepth(vDerivativeRes, i, j) = (int)(depthV + 0.5);
 		}
 	}
 
@@ -158,20 +174,28 @@ void generateOutputImage(proc_para_depth)
 	{
 		for (int j = 0; j < width; j++)
 		{
-			int depth = *bufferDepth(hDerivativeRes, i, j);
-			if (depth >= 0)
+			if (bufferPixel(tmpPixelBuffer, i, j)[0] == 255 || bufferPixel(tmpPixelBuffer, i, j)[1] == 255 || bufferPixel(tmpPixelBuffer, i, j)[2] == 255)
 			{
-				dstPixel(i, j)[0] = 0;
-				dstPixel(i, j)[2] = histogram[depth - histogramOffset];
+				dstPixel(i ,j)[0] = bufferPixel(tmpPixelBuffer, i, j)[0];
+				dstPixel(i ,j)[1] = bufferPixel(tmpPixelBuffer, i, j)[1];
+				dstPixel(i ,j)[2] = bufferPixel(tmpPixelBuffer, i, j)[2];
 			}
 			else
 			{
-				dstPixel(i, j)[0] = histogram[-depth - histogramOffset];
-				dstPixel(i, j)[2] = 0;
+				int depth = *bufferDepth(hDerivativeRes, i, j);
+				if (depth >= 0)
+				{
+					dstPixel(i, j)[0] = 0;
+					dstPixel(i, j)[2] = histogram[depth - histogramOffset];
+				}
+				else
+				{
+					dstPixel(i, j)[0] = histogram[-depth - histogramOffset];
+					dstPixel(i, j)[2] = 0;
+				}
+				dstPixel(i, j)[1] = bufferPixel(tmpPixelBuffer, i, j)[1];
+				//dstPixel(i, j)[1] = 0;
 			}
-			dstPixel(i, j)[1] = bufferPixel(tmpPixelBuffer, i, j)[1];
-
-			//dstPixel(i, j)[0] = 0;
 			//dstPixel(i, j)[1] = histogram[*bufferDepth(hDerivativeRes, i, j) - histogramOffset];
 			//dstPixel(i, j)[2] = histogram[*bufferDepth(vDerivativeRes, i, j) - histogramOffset];
 		}
@@ -188,12 +212,13 @@ double distSquaredInRealWorld(int x1, int y1, int depth1, int x2, int y2, int de
 	return (x1Real - x2Real) * (x1Real - x2Real) + (y1Real - y2Real) * (y1Real - y2Real) + (depth1 - depth2) * (depth1 - depth2);
 }
 
-void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax)
+//strips: first vector: rows; second vector: a list of all strip in a row;
+void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax, vector<vector<Strip> >& strips)
 {
-	memset(tmpPixelBuffer, 0, pixelStride * height * 3);
-
 	for (int i = 0; i < height; i++)
 	{
+		strips.push_back(vector<Strip>());
+
 		StripState state = StripSmooth;
 		int partialMin, partialMax;
 		int partialMinPos, partialMaxPos;
@@ -252,19 +277,21 @@ void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax)
 				}
 				else
 				{
+					int depth = *srcDepth(i, (partialMaxPos + partialMinPos) / 2);	//use the middle point of the strip to measure depth, assuming it is the center of the finger
 					double distSquared = distSquaredInRealWorld(
-						partialMaxPos, i, *srcDepth(i, partialMaxPos),
-						partialMinPos, i, *srcDepth(i, partialMinPos),
+						partialMaxPos, i, depth,
+						partialMinPos, i, depth,
 						width, height);
 
 					if (distSquared >= fingerWidthMin * fingerWidthMin && distSquared <= fingerWidthMax * fingerWidthMax)
 					{
 						for (int tj = partialMaxPos; tj <= partialMinPos; tj++)
 						{
-							bufferPixel(tmpPixelBuffer, i, tj)[0] = 0;
+							//bufferPixel(tmpPixelBuffer, i, tj)[0] = 0;
 							bufferPixel(tmpPixelBuffer, i, tj)[1] = 255;
-							bufferPixel(tmpPixelBuffer, i, tj)[2] = 0;
+							//bufferPixel(tmpPixelBuffer, i, tj)[2] = 0;
 						}
+						strips[i].push_back(Strip(i, partialMaxPos, partialMinPos));
 						
 						partialMax = currVal;
 						partialMaxPos = j;
@@ -276,6 +303,115 @@ void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax)
 			}
 		}
 	}
+}
+
+int findFingers(proc_para_depth, double fingerLengthMin, double fingerLengthMax, vector<vector<Strip> >& strips, int maxFingers, int* resultPtr)
+{
+	vector<Strip*> stripBuffer;	//used to fill back
+	vector<Finger> fingers;
+
+	for (int i = 0; i < height; i++)
+	{
+		for (vector<Strip>::iterator it = strips[i].begin(); it != strips[i].end(); ++it)
+		{
+			if (it->visited)
+			{
+				continue;
+			}
+
+			stripBuffer.clear();
+			stripBuffer.push_back(&(*it));
+			it->visited = true;
+
+			//search down
+			int blankCounter = 0;
+			for (int si = i; si < height; si++)
+			{
+				Strip* currTop = stripBuffer[stripBuffer.size() - 1];
+
+				//search strip
+				bool stripFound = false;
+				for (vector<Strip>::iterator sIt = strips[si].begin(); sIt != strips[si].end(); ++sIt)
+				{
+					if (sIt->visited)
+					{
+						continue;
+					}
+
+					if (sIt->rightCol > currTop->leftCol && sIt->leftCol < currTop->rightCol)	//overlap!
+					{
+						stripBuffer.push_back(&(*sIt));
+						sIt->visited = true;
+						stripFound = true;
+						break;
+					}
+				}
+
+				if (!stripFound) //blank
+				{
+					blankCounter++;
+					if (blankCounter > STRIP_MAX_BLANK_PIXEL)
+					{
+						//Too much blank, give up
+						break;
+					}
+				}
+			}
+
+			//check length
+			Strip* first = stripBuffer[0];
+			int firstMidCol = (first->leftCol + first->rightCol) / 2;
+			Strip* last = stripBuffer[stripBuffer.size() - 1];
+			int lastMidCol = (last->leftCol + last->rightCol) / 2;
+			int depth = *srcDepth((first->row + last->row) / 2, (firstMidCol + lastMidCol) / 2);	//jst a try
+			double lengthSquared = distSquaredInRealWorld(
+				firstMidCol, first->row, depth, // *srcDepth(first->row, firstMidCol),
+				lastMidCol, last->row, depth, //*srcDepth(last->row, lastMidCol),
+				width, height
+				);
+			
+			if (lengthSquared >= fingerLengthMin * fingerLengthMin && lengthSquared <= fingerLengthMax * fingerLengthMax)	//finger!
+			{
+				//fill back
+				int bufferPos = -1;
+				for (int row = first->row; row <= last->row; row++)
+				{
+					int leftCol, rightCol;
+					if (row == stripBuffer[bufferPos + 1]->row)	//find next detected row
+					{
+						bufferPos++;
+						leftCol = stripBuffer[bufferPos]->leftCol;
+						rightCol = stripBuffer[bufferPos]->rightCol;
+					}
+					else	//in blank area, interpolate
+					{
+						double ratio = (double)(row - stripBuffer[bufferPos]->row) / (double)(stripBuffer[bufferPos + 1]->row - stripBuffer[bufferPos]->row);
+						leftCol = stripBuffer[bufferPos]->leftCol + (stripBuffer[bufferPos + 1]->leftCol - stripBuffer[bufferPos]->leftCol) * ratio;
+						rightCol = stripBuffer[bufferPos]->rightCol + (stripBuffer[bufferPos + 1]->rightCol - stripBuffer[bufferPos]->rightCol) * ratio;
+					}
+
+					for (int col = leftCol; col <= rightCol; col++)
+					{
+						bufferPixel(tmpPixelBuffer, row, col)[0] = 255;
+						//bufferPixel(tmpPixelBuffer, row, col)[1] = 255;
+						bufferPixel(tmpPixelBuffer, row, col)[2] = 255;
+					}
+				}
+
+				fingers.push_back(Finger(first->row, firstMidCol, last->row - first->row + 1));
+			}
+		}
+	}
+
+	sort(fingers.begin(), fingers.end());
+	int i;
+	for (i = 0; i < maxFingers && i < fingers.size(); i++)
+	{
+		resultPtr[2 * i] = fingers[i].tipCol;
+		resultPtr[2 * i + 1] = fingers[i].tipRow;
+	}
+
+	return i;
 }
 
 proc_m derivativeFingerDetectorInit(proc_para_depth, int deviceMaxDepth, double realWorldXToZArg, double realWorldYToZArg)
@@ -319,14 +455,19 @@ proc_m derivativeFingerDetectorDispose()
 	return 0;
 }
 
-proc_m derivativeFingerDetectorWork(proc_para_depth, double fingerWidthMin, double fingerWidthMax)
+proc_m derivativeFingerDetectorWork(proc_para_depth, double fingerWidthMin, double fingerWidthMax, double fingerLengthMin, double fingerLengthMax, int maxFingers, int* resultPtr)
 {
+	memset(tmpPixelBuffer, 0, pixelStride * height * 3);
+
 	sobel(srcDepthPtr, NULL, width, height, depthStride, pixelStride);
 	//sobelLinear(srcDepthPtr, NULL, width, height, depthStride, pixelStride);
-	findStrips(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride, fingerWidthMin, fingerWidthMax);
+
+	vector<vector<Strip> > strips;
+	findStrips(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride, fingerWidthMin, fingerWidthMax, strips);
+	int fingerNum = findFingers(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride, fingerLengthMin, fingerLengthMax, strips, maxFingers, resultPtr);
 	generateOutputImage(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride);
 
-	return 0;
+	return fingerNum;
 }
 
 proc_m derivativeFingerDetectorGetDerivativeFrame(int** hResPtr, int** vResPtr)	//not robust, just for debugging

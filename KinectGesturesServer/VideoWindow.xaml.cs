@@ -139,7 +139,7 @@ namespace KinectGesturesServer
                 }
 
                 //draw fingers
-                /*var fingers = sensor.MultiTouchTracker.Fingers;
+                var fingers = sensor.MultiTouchTrackerOmni.Fingers;
                 for (int i = 0; i < fingers.Count; i++)
                 {
                     Canvas.SetLeft(fingerPoints[i], fingers[i].X);
@@ -150,7 +150,7 @@ namespace KinectGesturesServer
                 for (int i = fingers.Count; i < fingerPoints.Count; i++)
                 {
                     fingerPoints[i].Opacity = 0;
-                }*/
+                }
             });
         }
 
