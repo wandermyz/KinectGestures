@@ -10,7 +10,8 @@ using namespace std;
 //#define FINGER_WIDTH_MAX 40	//in millimeters
 #define FINGER_EDGE_THRESHOLD 1000
 #define STRIP_MAX_BLANK_PIXEL 10
-#define STRIP_DEPTH_DIFF_MAX 
+#define FINGER_MIN_PIXEL_LENGTH 10
+#define FINGER_TO_HAND_OFFSET 100   //in millimeters
 
 typedef enum
 {
@@ -30,11 +31,10 @@ typedef struct Strip
 
 typedef struct Finger
 {
-	int tipRow;
-	int tipCol;
-	int pixelLength;
-	struct Finger(int tipRow, int tipCol, int pixelLength) : tipRow(tipRow), tipCol(tipCol), pixelLength(pixelLength) { }
-	bool operator<(const Finger& ref) const { return pixelLength > ref.pixelLength; }	//sort more to less
+	int tipX, tipY, tipZ;
+	int endX, endY, endZ;
+	struct Finger(int tipX, int tipY, int tipZ, int endX, int endY, int endZ) : tipX(tipX), tipY(tipY), tipZ(tipZ), endX(endX), endY(endY), endZ(endZ) { }
+	bool operator<(const Finger& ref) const { return endY - tipY > ref.endY - ref.tipY; }	//sort more to less
 } Finger;
 
 static int *hDerivativeRes = NULL, *vDerivativeRes = NULL, *histogram = NULL;
@@ -212,6 +212,12 @@ double distSquaredInRealWorld(int x1, int y1, int depth1, int x2, int y2, int de
 	return (x1Real - x2Real) * (x1Real - x2Real) + (y1Real - y2Real) * (y1Real - y2Real) + (depth1 - depth2) * (depth1 - depth2);
 }
 
+void convertProjectiveToRealWorld(int px, int py, int depth, double& rx, double& ry, int width, int height)
+{
+	rx = ((double)px / (double)width - 0.5) * depth * realWorldXToZ;
+	ry = (0.5 - (double)py / (double)height) * depth * realWorldYToZ;
+}
+
 //strips: first vector: rows; second vector: a list of all strip in a row;
 void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax, vector<vector<Strip> >& strips)
 {
@@ -305,7 +311,8 @@ void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax, v
 	}
 }
 
-int findFingers(proc_para_depth, double fingerLengthMin, double fingerLengthMax, vector<vector<Strip> >& strips, int maxFingers, int* resultPtr)
+//handhint: the result for estimating the hand position, in real world coordinate. int x, int y, int z, int pixelLength. pixel lenth is used as the measure of confidence.
+int findFingers(proc_para_depth, double fingerLengthMin, double fingerLengthMax, vector<vector<Strip> >& strips, int maxFingers, int* resultPtr, int* handHint)
 {
 	vector<Strip*> stripBuffer;	//used to fill back
 	vector<Finger> fingers;
@@ -369,8 +376,11 @@ int findFingers(proc_para_depth, double fingerLengthMin, double fingerLengthMax,
 				lastMidCol, last->row, depth, //*srcDepth(last->row, lastMidCol),
 				width, height
 				);
+			int pixelLength = last->row - first->row +1;
 			
-			if (lengthSquared >= fingerLengthMin * fingerLengthMin && lengthSquared <= fingerLengthMax * fingerLengthMax)	//finger!
+			if (pixelLength >= FINGER_MIN_PIXEL_LENGTH 
+				&& lengthSquared >= fingerLengthMin * fingerLengthMin 
+				&& lengthSquared <= fingerLengthMax * fingerLengthMax)	//finger!
 			{
 				//fill back
 				int bufferPos = -1;
@@ -398,7 +408,7 @@ int findFingers(proc_para_depth, double fingerLengthMin, double fingerLengthMax,
 					}
 				}
 
-				fingers.push_back(Finger(first->row, firstMidCol, last->row - first->row + 1));
+				fingers.push_back(Finger(firstMidCol, first->row, depth, lastMidCol, last->row, depth));	//TODO: depth?
 			}
 		}
 	}
@@ -407,8 +417,31 @@ int findFingers(proc_para_depth, double fingerLengthMin, double fingerLengthMax,
 	int i;
 	for (i = 0; i < maxFingers && i < fingers.size(); i++)
 	{
-		resultPtr[2 * i] = fingers[i].tipCol;
-		resultPtr[2 * i + 1] = fingers[i].tipRow;
+		resultPtr[2 * i] = fingers[i].tipX;
+		resultPtr[2 * i + 1] = fingers[i].tipY;
+	}
+	
+	//hand hint	TODO: if tip and end are not in the same depth
+	if(fingers.size() > 0)
+	{
+		double rx1, ry1, rx2, ry2;
+		convertProjectiveToRealWorld(fingers[0].tipX, fingers[0].tipY, fingers[0].tipZ, rx1, ry1, width, height);
+		convertProjectiveToRealWorld(fingers[0].endX, fingers[0].endY, fingers[0].endZ, rx2, ry2, width, height);
+		double scale = FINGER_TO_HAND_OFFSET / sqrt((rx2 - rx1) * (rx2 - rx1) + (ry2 - ry1) * (ry2 - ry1));
+
+		/*double rx = fingers[0].tipZ * realWorldXToZ;
+		double ry = fingers[0].tipZ * realWorldYToZ;
+		double dx = fingers[0].endX - fingers[0].tipX;
+		double dy = fingers[0].endY - fingers[0].tipY;
+		double scale = FINGER_TO_HAND_OFFSET / sqrt(rx * rx * dx * dx + ry * ry * dy * dy);
+		handHint[0] = fingers[0].tipX + (int)(scale * dx + 0.5);
+		handHint[1] = fingers[0].tipY + (int)(scale * dy + 0.5);*/
+
+		handHint[0] = rx1 + (rx2 - rx1) * scale;
+		handHint[1] = ry1 + (ry2 - ry1) * scale;
+
+		handHint[2] = fingers[0].tipZ;
+		handHint[3] = fingers[0].endY - fingers[0].tipY + 1;
 	}
 
 	return i;
@@ -455,7 +488,7 @@ proc_m derivativeFingerDetectorDispose()
 	return 0;
 }
 
-proc_m derivativeFingerDetectorWork(proc_para_depth, double fingerWidthMin, double fingerWidthMax, double fingerLengthMin, double fingerLengthMax, int maxFingers, int* resultPtr)
+proc_m derivativeFingerDetectorWork(proc_para_depth, double fingerWidthMin, double fingerWidthMax, double fingerLengthMin, double fingerLengthMax, int maxFingers, int* resultPtr, int* handHint)
 {
 	memset(tmpPixelBuffer, 0, pixelStride * height * 3);
 
@@ -464,7 +497,7 @@ proc_m derivativeFingerDetectorWork(proc_para_depth, double fingerWidthMin, doub
 
 	vector<vector<Strip> > strips;
 	findStrips(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride, fingerWidthMin, fingerWidthMax, strips);
-	int fingerNum = findFingers(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride, fingerLengthMin, fingerLengthMax, strips, maxFingers, resultPtr);
+	int fingerNum = findFingers(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride, fingerLengthMin, fingerLengthMax, strips, maxFingers, resultPtr, handHint);
 	generateOutputImage(srcDepthPtr, dstPixelPtr, width, height, depthStride, pixelStride);
 
 	return fingerNum;

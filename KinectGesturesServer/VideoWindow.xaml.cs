@@ -160,6 +160,21 @@ namespace KinectGesturesServer
             sensor.HandTracker.HandDestroy -= HandTracker_HandDestroy;
             sensor.HandTracker.HandUpdate -= HandTracker_HandUpdate;
         }
+
+        private void videoImage_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var pos = e.GetPosition(videoImage);
+            Point3D realPoint = sensor.getRealWorldPosition((int)pos.X, (int)pos.Y); //TODO: convert double coord to pixel? 
+            sensor.HandTracker.StartTrackingAt(realPoint);
+        }
+
+        private void videoImage_MouseMove(object sender, MouseEventArgs e)
+        {
+            var pos = e.GetPosition(videoImage);
+            Point3D realPoint = sensor.getRealWorldPosition((int)pos.X, (int)pos.Y); //TODO: convert double coord to pixel? 
+            screenCoordLabel.Content = String.Format("{0}, {1}, {2}", pos.X, pos.Y, realPoint.Z);
+            realCoordLabel.Content = String.Format("{0}, {1}, {2}", realPoint.X, realPoint.Y, realPoint.Z);
+        }
     }
 
     public enum VideoType

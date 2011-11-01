@@ -20,8 +20,8 @@ namespace KinectGesturesServer
 
         [DllImport("KinectGesturesImageProcessorLib.dll")]
         public static extern unsafe int derivativeFingerDetectorWork(ushort* srcDepthPtr, byte* dstPixelPtr, int width, int height, int depthStride, int pixelStride, 
-                                                                    double fingerWidthMin, double fingerWidthMax, double fingerLengthMin, double fingerLengthMax, 
-                                                                    int maxPointNum, int* resultPtr);
+                                                                    double fingerWidthMin, double fingerWidthMax, double fingerLengthMin, double fingerLengthMax,
+                                                                    int maxPointNum, int* resultPtr, int* handHint);
 
         [DllImport("KinectGesturesImageProcessorLib.dll")]
         public static extern unsafe int derivativeFingerDetectorGetDerivativeFrame(int** hResPtr, int** vResPtr);

@@ -15,9 +15,12 @@ namespace KinectGesturesServer
     public class MultiTouchTrackerOmni
     {
         private const int MAX_FINGERS = 10;
+        private const int HAND_CHANGE_CONFIDENCE_THRESHOLD = 20;
 
         private NuiSensor sensor;
         private int width, height;
+
+        private int lastHandDetectConfidence = 0;
 
         #region buffers for multi-touch sensing
         private byte[] bufferOutputColored; 
@@ -125,18 +128,20 @@ namespace KinectGesturesServer
         void sensor_FrameUpdate(object sender, NuiSensor.FrameUpdateEventArgs e)
         {
             int fingersNum = 0;
+            int[] handHint = new int[4];
+
             lock (bufferOutputColored)
             {
                 unsafe
                 {
                     fixed (byte* bufferOutputColorPtr = bufferOutputColored)
                     {
-                        fixed (int* fingerRawPtr = fingersRaw)
+                        fixed (int* fingerRawPtr = fingersRaw, handHintPtr = handHint)
                         {
                             ushort* pDepth = (ushort*)sensor.DepthMetaData.DepthMapPtr.ToPointer();
                             fingersNum = ImageProcessorLib.derivativeFingerDetectorWork(pDepth, bufferOutputColorPtr, width, height, width, width * 3, 
                                 FingerWidthMin, FingerWidthMax, FingerLengthMin, FingerLengthMax, 
-                                MAX_FINGERS, fingerRawPtr);
+                                MAX_FINGERS, fingerRawPtr, handHintPtr);
                         }
                     }
                 }
@@ -147,6 +152,20 @@ namespace KinectGesturesServer
             {
                 Fingers.Add(new Point3D(fingersRaw[2 * i], fingersRaw[2 * i + 1], 0)); 
             }
+
+            if (Fingers.Count > 0 && (!sensor.HandTracker.IsTracking || handHint[3] - lastHandDetectConfidence > HAND_CHANGE_CONFIDENCE_THRESHOLD))
+            {
+                sensor.HandTracker.HandDestroy += new EventHandler<HandDestroyEventArgs>(HandTracker_HandDestroy);
+                sensor.HandTracker.StartTrackingAt(new Point3D(handHint[0], handHint[1], handHint[2]));
+                lastHandDetectConfidence = handHint[3];
+                Trace.WriteLine("Hand hint at " + string.Format("{0}, {1}, {2}", handHint[0], handHint[1], handHint[2]) + " with confidence" + handHint[3].ToString());
+            }
+        }
+
+        void HandTracker_HandDestroy(object sender, HandDestroyEventArgs e)
+        {
+            lastHandDetectConfidence = 0;
+            sensor.HandTracker.HandDestroy -= HandTracker_HandDestroy;
         }
 
         /// <summary>

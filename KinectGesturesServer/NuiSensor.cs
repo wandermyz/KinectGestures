@@ -258,6 +258,24 @@ namespace KinectGesturesServer
 
         #region Public methods
 
+        //get the real world position of pixel coordinate (x,y). Do not use it in loops.
+        public Point3D getRealWorldPosition(int x, int y)
+        {
+            if (depthMD == null)
+            {
+                return Point3D.ZeroPoint;
+            }
+
+            int depth;
+            unsafe
+            {
+                ushort* pDepth = (ushort*)DepthGenerator.DepthMapPtr.ToPointer();
+                depth = pDepth[y * depthMD.XRes + x];
+            }
+
+            return DepthGenerator.ConvertProjectiveToRealWorld(new Point3D(x, y, depth));
+        }
+
         /// <summary>
         /// Re-creates the depth histogram.
         /// </summary>
