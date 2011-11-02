@@ -20,6 +20,40 @@
                 <Button Name="captureButton" HorizontalAlignment="Center" Click="captureButton_Click">Capture</Button>
             </Grid>
         </GroupBox>
+        <GroupBox Header="Multi-touch Settings">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="100"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Name="calibrationButton" HorizontalAlignment="Center" VerticalAlignment="Center" Click="calibrationButton_Click">Calibrate</Button>
+
+                <Slider Grid.Row="1" Grid.Column="0" Name="threshold1Slider" Minimum="0" Maximum="10" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="0.1" LargeChange="5" />
+                <TextBox Grid.Row="2" Grid.Column="0" Name="threshold1TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center">MinWidth</Label>
+
+                <Slider Grid.Row="1" Grid.Column="1" Name="threshold2Slider" Minimum="0" Maximum="100" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Name="threshold2TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">MaxWidth</Label>
+
+                <Slider Grid.Row="1" Grid.Column="2" Name="threshold3Slider" Minimum="0" Maximum="200" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="2" Name="threshold3TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center">MinLength</Label>
+
+                <Slider Grid.Row="1" Grid.Column="3" Name="threshold4Slider" Minimum="0" Maximum="200" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
+                <TextBox Grid.Row="2" Grid.Column="3" Name="threshold4TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
+                <Label Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center">MaxLength</Label>
+            </Grid>
+        </GroupBox>
         <GroupBox Header="Hand Tracking" Margin="5">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -62,39 +96,6 @@
                 <Label Grid.Row="0" Grid.Column="4" HorizontalAlignment="Center">Z</Label>
             </Grid>
         </GroupBox>
-        <GroupBox Header="Multi-touch Settings">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="100"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Name="calibrationButton" HorizontalAlignment="Center" VerticalAlignment="Center" Click="calibrationButton_Click">Calibrate</Button>
-
-                <Slider Grid.Row="1" Grid.Column="0" Name="threshold1Slider" Minimum="0" Maximum="10" HorizontalAlignment="Center" Orientation="Vertical" ValueChanged="thresholdSliders_ValueChanged" SmallChange="0.1" LargeChange="5" />
-                <TextBox Grid.Row="2" Grid.Column="0" Name="threshold1TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="0" HorizontalAlignment="Center">MinWidth</Label>
-                
-                <Slider Grid.Row="1" Grid.Column="1" Name="threshold2Slider" Minimum="0" Maximum="100" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
-                <TextBox Grid.Row="2" Grid.Column="1" Name="threshold2TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">MaxWidth</Label>
-
-                <Slider Grid.Row="1" Grid.Column="2" Name="threshold3Slider" Minimum="0" Maximum="200" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
-                <TextBox Grid.Row="2" Grid.Column="2" Name="threshold3TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center">MinLength</Label>
-
-                <Slider Grid.Row="1" Grid.Column="3" Name="threshold4Slider" Minimum="0" Maximum="200" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="thresholdSliders_ValueChanged" SmallChange="1" LargeChange="5"/>
-                <TextBox Grid.Row="2" Grid.Column="3" Name="threshold4TextBox" IsReadOnly="True" Margin="2" TextAlignment="Center"/>
-                <Label Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center">MaxLength</Label>
-            </Grid>
-        </GroupBox>
+       
     </StackPanel>
 </Window>

@@ -16,12 +16,12 @@
 	<ProductionNodes>
 		<Node type="Depth" name="Depth1">
 			<Configuration>
-				<Mirror on="false"/>
+				<Mirror on="true"/>
 			</Configuration>
 		</Node>
 		<Node type="Image" name="Image1" stopOnError="false">
 			<Configuration>
-				<Mirror on="false"/>
+				<Mirror on="true"/>
 			</Configuration>
 		</Node>
     <Node type="Hands" name="Hands1" stopOnError="false">
