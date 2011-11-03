@@ -74,12 +74,13 @@ int sobel(proc_para_depth)
 						continue;
 
 					ushort srcDepthVal = *srcDepth(neighbor_row, neighbor_col);
+					//depthH += tpl[ti][tj] * srcDepthVal;
 					depthH += tpl[ti][tj] * (srcDepthVal == 0 ? deviceMaxDepth : srcDepthVal);
-					depthV += tpl[tj][ti] * *srcDepth(neighbor_row, neighbor_col);
+					//depthV += tpl[tj][ti] * *srcDepth(neighbor_row, neighbor_col);
 				}
 			}
 			*bufferDepth(hDerivativeRes, i, j) = (int)(depthH + 0.5);
-			*bufferDepth(vDerivativeRes, i, j) = (int)(depthV + 0.5);
+			//*bufferDepth(vDerivativeRes, i, j) = (int)(depthV + 0.5);
 		}
 	}
 
@@ -230,12 +231,12 @@ void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax, v
 		int partialMinPos, partialMaxPos;
 		for (int j = 0; j < width; j++)
 		{
-			int currVal = *bufferDepth(hDerivativeRes, i, j);
-			if (*srcDepth(i, j) == 0)
+			if (i == 240 && j == 160)
 			{
-				state = StripSmooth;
-				continue;
+				int checkpoint = 1;
 			}
+
+			int currVal = *bufferDepth(hDerivativeRes, i, j);
 
 			switch(state)
 			{
@@ -269,6 +270,13 @@ void findStrips(proc_para_depth, double fingerWidthMin, double fingerWidthMax, v
 					partialMin = currVal;
 					partialMinPos = j;
 					state = StripFalling;
+				}
+				else if (currVal > FINGER_EDGE_THRESHOLD)
+				{
+					//previous trial faied, start over
+					partialMax = currVal;
+					partialMaxPos = j;
+					state = StripRising;
 				}
 				break;
 

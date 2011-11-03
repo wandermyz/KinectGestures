@@ -250,7 +250,7 @@ namespace KinectGesturesServer
 
         private void captureButton_Click(object sender, RoutedEventArgs e)
         {
-            string folder = @"Z:\文稿\Program\Projects\Kinect\MatlabTest\";
+            string folder = @"Z:\VMwareSharing\KinectCapture\";
             string fileNamePrefix = DateTime.Now.ToString("yyyyMMdd-hhmmss-");
             nuiSensor.Capture(folder, fileNamePrefix);
         }
